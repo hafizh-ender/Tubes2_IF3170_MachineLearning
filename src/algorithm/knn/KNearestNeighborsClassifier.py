@@ -6,7 +6,7 @@ from scipy.stats import mode
 
 from .strategy import DistanceStrategy, EuclideanDistanceStrategy
 from src.exception import InconsistentTrainingAndTestingNumberOfFeaturesException, \
-    InconsistenTrainingNumberOfInstancesException, \
+    InconsistentTrainingNumberOfInstancesException, \
     NumberOfNeighborsException, TrainingDataIsNotDefinedException, TestingDataIsNotDefinedException
 
 
@@ -40,21 +40,21 @@ class KNearestNeighborsClassifier:
         return self._distance_strategy
 
     @property
-    def k_neighbors_distances(self) -> List[List[float]]:
+    def k_neighbors_distances(self) -> List[List[Union[int, float]]]:
         return self._k_neighbors_distances
 
     def set_distance_strategy(self, strategy: DistanceStrategy):
         self._distance_strategy = strategy
 
-    def fit(self, X_train: List[List[Union[int, float]]], Y_train: List[Union[int, float]]):
+    def fit(self, X_train: List[List[Union[int, float]]], Y_train: List[Union[int, float]]) -> None:
         X_train, Y_train = np.array(X_train), np.array(Y_train)
         if X_train.shape[0] != Y_train.shape[0]:
-            raise InconsistenTrainingNumberOfInstancesException()
+            raise InconsistentTrainingNumberOfInstancesException()
 
         self._X_train, self._Y_train = X_train, Y_train
         self._n_instances_train, self._n_features = self._X_train.shape
 
-    def predict(self, X_test: List[List[Union[int, float]]]):
+    def predict(self, X_test: List[List[Union[int, float]]]) -> List[Union[int, float]]:
         if self._X_train is None or self._Y_train is None:
             raise TrainingDataIsNotDefinedException()
 
