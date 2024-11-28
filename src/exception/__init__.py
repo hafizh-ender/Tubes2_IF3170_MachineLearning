@@ -1,0 +1,3 @@
+from .InconsistentTrainingAndTestingNumberOfFeaturesException import \
+    InconsistentTrainingAndTestingNumberOfFeaturesException
+from .NumberOfNeighborsException import NumberOfNeighborsException

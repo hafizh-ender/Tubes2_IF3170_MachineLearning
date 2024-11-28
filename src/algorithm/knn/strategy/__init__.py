@@ -1,0 +1,4 @@
+from .DistanceStrategy import DistanceStrategy
+from .EuclideanDistanceStrategy import EuclideanDistanceStrategy
+from .ManhattanDistanceStrategy import ManhattanDistanceStrategy
+from .MinkowskiDistanceStrategy import MinkowskiDistance
