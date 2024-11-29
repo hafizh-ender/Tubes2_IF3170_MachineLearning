@@ -3,11 +3,15 @@ from typing import List, Union, Any
 import numpy as np
 from numpy import ndarray, dtype
 from scipy.stats import mode
+import joblib
+import os
 
 from .strategy import DistanceStrategy, EuclideanDistanceStrategy
 from src.exception import InconsistentTrainingAndTestingNumberOfFeaturesException, \
     InconsistentTrainingNumberOfInstancesException, \
-    NumberOfNeighborsException, TrainingDataIsNotDefinedException, TestingDataIsNotDefinedException
+    NumberOfNeighborsException, TrainingDataIsNotDefinedException, TestingDataIsNotDefinedException, \
+    InvalidPathToModelException
+from src import Utils
 
 
 class KNearestNeighborsClassifier:
@@ -43,7 +47,7 @@ class KNearestNeighborsClassifier:
     def k_neighbors_distances(self) -> List[List[Union[int, float]]]:
         return self._k_neighbors_distances
 
-    def set_distance_strategy(self, strategy: DistanceStrategy):
+    def set_distance_strategy(self, strategy: DistanceStrategy) -> None:
         self._distance_strategy = strategy
 
     def fit(self, X_train: List[List[Union[int, float]]], Y_train: List[Union[int, float]]) -> None:
@@ -87,3 +91,22 @@ class KNearestNeighborsClassifier:
         indices = distances.argsort()[:self.n_neighbors]
 
         return self._Y_train[indices], distances[indices]
+
+    def save(self, filepath: str) -> None:
+        if Utils.get_file_extension(filepath) != ".pkl":
+            raise InvalidPathToModelException()
+
+        filepath, directory = os.path.join(os.path.abspath(os.getcwd()), filepath), os.path.dirname(filepath)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+
+        joblib.dump(self, filepath)
+
+    @staticmethod
+    def load(filepath: str):
+        if Utils.get_file_extension(filepath) != ".pkl":
+            raise InvalidPathToModelException()
+
+        filepath = os.path.join(os.path.abspath(os.getcwd()), filepath)
+
+        return joblib.load(filepath)

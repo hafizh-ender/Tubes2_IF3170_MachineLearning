@@ -94,3 +94,11 @@ print("===============================================================")
 # Minkowski distance (p=1)
 scratchKNN.set_distance_strategy(MinkowskiDistance(1))
 compare("minkowski", True, 1)
+
+print("===============================================================")
+
+scratchKNN.save("../../model/knn.pkl")
+
+loaded_model = scratchKNN.load("../../model/knn.pkl")
+
+print(loaded_model.distance_strategy.__class__.__name__)
