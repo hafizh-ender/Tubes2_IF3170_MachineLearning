@@ -80,6 +80,10 @@ class GaussianNaiveBayes:
         y_pred : list of shape (n_samples,)
             The predicted class labels for each input sample.
         """        
+        # Check if the classifier has been fitted
+        if not self.class_priors_:
+            raise ValueError("The classifier has not been fitted yet.")
+        
         # Check if X is a DataFrame and convert it to a list if it is
         if isinstance(X, pd.DataFrame):
             X = X.values.tolist()
