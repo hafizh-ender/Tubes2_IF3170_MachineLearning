@@ -1,2 +1,2 @@
-from src.algorithm.knn.strategy import *
+from src.algorithm.neighbors.strategy import *
 from .KNearestNeighborsClassifier import KNearestNeighborsClassifier

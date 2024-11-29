@@ -1,4 +1,4 @@
-from typing import List, Union, Any
+from typing import List, Union, Any, Tuple
 
 import numpy as np
 from numpy import ndarray, dtype
@@ -6,7 +6,7 @@ from scipy.stats import mode
 import joblib
 import os
 
-from src.algorithm.knn.strategy import DistanceStrategy, EuclideanDistanceStrategy
+from src.algorithm.neighbors.strategy import DistanceStrategy, EuclideanDistanceStrategy
 from src.exception import InconsistentTrainingAndTestingNumberOfFeaturesException, \
     InconsistentTrainingNumberOfInstancesException, \
     NumberOfNeighborsException, TrainingDataIsNotDefinedException, TestingDataIsNotDefinedException, \
@@ -79,8 +79,7 @@ class KNearestNeighborsClassifier:
         return Y_predicted
 
     # return the k nearest neighbors and the distances
-    def _find_k_neighbors(self, x: List[List[Union[int, float]]]) -> (
-            List[Union[int, float]], List[List[Union[int, float]]]):
+    def _find_k_neighbors(self, x: List[List[Union[int, float]]]) -> Tuple[List[Union[int, float]], List[Union[int, float]]]:
         if self._X_test is None:
             raise TestingDataIsNotDefinedException()
 
