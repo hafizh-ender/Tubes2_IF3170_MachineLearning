@@ -55,14 +55,14 @@ class GaussianNaiveBayes:
             
         # Combine the features and labels into a single DataFrame
         data = pd.DataFrame(X)
-        data['class'] = y
+        data['target_variable_'] = y
         
         # Compute the class priors
-        self.class_priors_ = data['class'].value_counts(normalize=True).to_dict()
+        self.class_priors_ = data['target_variable_'].value_counts(normalize=True).to_dict()
         
         # Compute the class means and variances
         for label in self.class_priors_:
-            subset = data[data['class'] == label].drop(columns='class')
+            subset = data[data['target_variable_'] == label].drop(columns='class')
             self.class_means_[label] = subset.mean().to_dict()
             self.class_variances_[label] = subset.var().to_dict()
             
