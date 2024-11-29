@@ -6,7 +6,7 @@ from scipy.stats import mode
 import joblib
 import os
 
-from .strategy import DistanceStrategy, EuclideanDistanceStrategy
+from src.algorithm.knn.strategy import DistanceStrategy, EuclideanDistanceStrategy
 from src.exception import InconsistentTrainingAndTestingNumberOfFeaturesException, \
     InconsistentTrainingNumberOfInstancesException, \
     NumberOfNeighborsException, TrainingDataIsNotDefinedException, TestingDataIsNotDefinedException, \
@@ -25,19 +25,19 @@ class KNearestNeighborsClassifier:
 
     _k_neighbors_distances: ndarray[Any, dtype[Any]]
 
-    def __init__(self, n_neighbors: int = 2, distance_strategy: DistanceStrategy = EuclideanDistanceStrategy):
-        self._n_neighbors, self._distance_strategy = n_neighbors, distance_strategy
+    def __init__(self, n_neighbors: int = 2, distance_strategy: DistanceStrategy = EuclideanDistanceStrategy()):
+        self._k_neighbors, self._distance_strategy = n_neighbors, distance_strategy
 
     @property
     def n_neighbors(self) -> int:
-        return self._n_neighbors
+        return self._k_neighbors
 
     @n_neighbors.setter
     def n_neighbors(self, val: int) -> None:
         if val < 1:
             raise NumberOfNeighborsException()
 
-        self._n_neighbors = val
+        self._k_neighbors = val
 
     @property
     def distance_strategy(self) -> DistanceStrategy:
@@ -69,7 +69,7 @@ class KNearestNeighborsClassifier:
         self._X_test, self._n_instances_test = X_test, X_test.shape[0]
 
         Y_predicted = np.zeros(self._n_instances_test)
-        self._k_neighbors_distances = np.array([np.zeros(self._n_neighbors) for _ in range(self._n_instances_test)])
+        self._k_neighbors_distances = np.array([np.zeros(self._k_neighbors) for _ in range(self._n_instances_test)])
 
         for i in range(self._n_instances_test):
             k_neighbors, distances = self._find_k_neighbors(self._X_test[i])

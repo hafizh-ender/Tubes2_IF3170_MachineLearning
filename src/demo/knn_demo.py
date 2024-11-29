@@ -80,7 +80,7 @@ scratchKNN = KNearestNeighborsClassifier(n_neighbors=k)
 print("===============================================================")
 
 # Euclidean distance
-scratchKNN.set_distance_strategy(EuclideanDistanceStrategy())
+# scratchKNN.set_distance_strategy(EuclideanDistanceStrategy())
 compare("euclidean", True)
 
 print("===============================================================")
