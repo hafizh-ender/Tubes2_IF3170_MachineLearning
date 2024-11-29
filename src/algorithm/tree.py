@@ -300,7 +300,6 @@ class IterativeDichotomiser3:
         attribute = node['attribute']
         value = x[attribute]
         
-        
         # Check if the attribute is categorical or continuous
         if attribute in self.attribute_unique_values_:
             if value not in node['children']:
@@ -336,3 +335,28 @@ class IterativeDichotomiser3:
         """
         with open(filename, 'r') as file:
             self.tree_ = json.load(file)
+        
+        self.attribute_unique_values_ = {}
+        self._get_unique_values(self.tree_)
+        
+    def _get_unique_values(self, node):
+        """
+        Recursively extract the unique values of each categorical attribute in the decision tree.
+        
+        Parameters
+        ----------
+        node : dict
+            The current node of the decision tree.
+        """
+        if 'attribute' in node:
+            attribute = node['attribute']
+            
+            if attribute in self.attribute_unique_values_:
+                return
+            
+            # Check if any dictionary in children is numeric by checking if it contains <= and > keys
+            if not any('>' in key for key in node['children']):
+                self.attribute_unique_values_[attribute] = list(node['children'].keys())
+                
+            for child in node['children'].values():
+                self._get_unique_values(child)
