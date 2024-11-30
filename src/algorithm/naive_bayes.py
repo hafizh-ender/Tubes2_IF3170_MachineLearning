@@ -62,7 +62,7 @@ class GaussianNaiveBayes:
         
         # Compute the class means and variances
         for label in self.class_priors_:
-            subset = data[data['target_variable_'] == label].drop(columns='class')
+            subset = data[data['target_variable_'] == label].drop(columns='target_variable_')
             self.class_means_[label] = subset.mean().to_dict()
             self.class_variances_[label] = subset.var().to_dict()
             
@@ -89,8 +89,9 @@ class GaussianNaiveBayes:
             X = X.values.tolist()
             
         # Check if X has the same number of features as the training data
-        if len(X[0]) != len(self.class_means_[0]):
-            raise ValueError("The number of features in X must be the same as the number of features in the training data.")
+        if len(X[0]) != len(self.feature_names_):
+            raise ValueError("The input data has a different number of features than the training data.")
+        
         
         y_pred = []
         for x in X:
