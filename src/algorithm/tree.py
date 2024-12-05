@@ -257,23 +257,29 @@ class IterativeDichotomiser3:
                 split = (attribute_values[i] + attribute_values[i - 1]) / 2
                 potential_splits.append(split)
         
+        previous_split = None
+        
         # Vectorized computation of entropy for each split
         for split in potential_splits:
-            left_mask = attribute_values <= split
-            right_mask = ~left_mask
+            # Dont check the same split value twice
+            if split != previous_split:
+                left_mask = attribute_values <= split
+                right_mask = ~left_mask
 
-            left_entropy = self._entropy(target_values[left_mask])
-            right_entropy = self._entropy(target_values[right_mask])
+                left_entropy = self._entropy(target_values[left_mask])
+                right_entropy = self._entropy(target_values[right_mask])
 
-            left_weight = np.sum(left_mask) / len(examples)
-            right_weight = np.sum(right_mask) / len(examples)
+                left_weight = np.sum(left_mask) / len(examples)
+                right_weight = np.sum(right_mask) / len(examples)
 
-            weighted_entropy = left_weight * left_entropy + right_weight * right_entropy
-            gain = total_entropy - weighted_entropy
+                weighted_entropy = left_weight * left_entropy + right_weight * right_entropy
+                gain = total_entropy - weighted_entropy
 
-            if gain > best_gain:
-                best_gain = gain
-                best_split = split
+                if gain > best_gain:
+                    best_gain = gain
+                    best_split = split
+                
+                previous_split = split
             
         return best_gain, best_split
     
