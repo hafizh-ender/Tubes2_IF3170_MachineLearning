@@ -8,7 +8,8 @@ class IterativeDichotomiser3:
     
     Parameters
     ----------
-    None
+    max_depth : int, default=None
+        The maximum depth of the decision tree. If None, the tree will expand until all leaves are pure.
     
     Attributes
     ----------
@@ -18,9 +19,10 @@ class IterativeDichotomiser3:
         The unique values of each categorical attribute in the training data.
     """
     
-    def __init__(self):
+    def __init__(self, max_depth=None):
         self.tree_ = None
         self.attribute_unique_values_ = {}
+        self.max_depth_ = max_depth
         
     def fit(self, X, y):
         """
@@ -42,7 +44,7 @@ class IterativeDichotomiser3:
                 self.attribute_unique_values_[attribute] = data[attribute].unique().tolist()
         
         data['target_variable_'] = y
-        self.tree_ = self._construct_tree(data, data.columns[:-1], None)
+        self.tree_ = self._construct_tree(data, data.columns[:-1], None, -1)
         
     def predict(self, X):
         """
@@ -67,7 +69,7 @@ class IterativeDichotomiser3:
         return y_pred.tolist()
 
     
-    def _construct_tree(self, examples, attributes, parent_examples):
+    def _construct_tree(self, examples, attributes, parent_examples, current_depth=0):
         """
         Recursively construct the decision tree based on the ID3 algorithm.
         
@@ -93,8 +95,8 @@ class IterativeDichotomiser3:
         if len(examples['target_variable_'].unique()) == 1:
             return examples['target_variable_'].iloc[0]
         
-        # Base case: no attributes left to split on
-        if len(attributes) == 0:
+        # Base case: no attributes left to split on or maximum depth reached
+        if len(attributes) == 0 or current_depth == self.max_depth_:
             return self._get_majority_class(examples)
         
         # Find the best attribute to split on
@@ -114,13 +116,13 @@ class IterativeDichotomiser3:
             for value in self.attribute_unique_values_[best_attribute]:
                 subset = examples.loc[examples[best_attribute] == value].drop(columns=best_attribute)
                 
-                node['children'][value] = self._construct_tree(subset, attributes.drop(best_attribute), examples)
+                node['children'][value] = self._construct_tree(subset, attributes.drop(best_attribute), examples, current_depth=current_depth+1)
         else:
             left_subset = examples.loc[examples[best_attribute] <= best_split].drop(columns=best_attribute)
             right_subset = examples.loc[examples[best_attribute] > best_split].drop(columns=best_attribute)
             
-            node['children'][f"<= {best_split}"] = self._construct_tree(left_subset, attributes.drop(best_attribute), examples)
-            node['children'][f"> {best_split}"] = self._construct_tree(right_subset, attributes.drop(best_attribute), examples)
+            node['children'][f"<= {best_split}"] = self._construct_tree(left_subset, attributes.drop(best_attribute), examples, current_depth=current_depth+1)
+            node['children'][f"> {best_split}"] = self._construct_tree(right_subset, attributes.drop(best_attribute), examples, current_depth=current_depth+1)
 
         return node           
         
