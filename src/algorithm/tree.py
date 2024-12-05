@@ -170,11 +170,11 @@ class IterativeDichotomiser3:
         for attribute in attributes:
             # Check if the attribute is categorical or continuous
             if examples[attribute].dtype == 'object' or examples[attribute].dtype == 'category':              
-                gain = entropy - self._information_gain(examples, attribute)
+                gain = self._information_gain(examples, attribute, entropy)
                 split = None
             else:              
                 # Find the best split value for the continuous attribute
-                gain, split = self._find_best_split(examples, attribute)
+                gain, split = self._find_best_split(examples, attribute, entropy)
                 
             if gain > best_gain:
                 best_attribute = attribute
@@ -183,9 +183,9 @@ class IterativeDichotomiser3:
     
         return best_gain, best_attribute, best_split
     
-    def _information_gain(self, examples, attribute):
+    def _information_gain(self, examples, attribute, entropy):
         """
-        Compute the information gain of an attribute.
+        Compute the information gain of a categotical attribute.
         
         Parameters
         ----------
@@ -193,35 +193,40 @@ class IterativeDichotomiser3:
             The input data for the current node.
         attribute : str
             The attribute for which to compute the information gain.
+        entropy : float
+            The entropy of the current node.
         
         Returns
         -------
         gain : float
             The computed information gain value.
         """
-        value_counts = examples[attribute].value_counts(normalize=True)
-        gain = sum(value_counts[value] * self._entropy(examples[examples[attribute] == value]['target_variable_']) for value in value_counts.index)
+        proportions = examples[attribute].value_counts(normalize=True)
+        grouped_entropies = examples.groupby(attribute)['target_variable_'].apply(self._entropy)
+        gain = entropy - np.sum(proportions * grouped_entropies)        
         
         return gain
     
-    def _entropy(self, labels):
+    def _entropy(self, examples_class):
         """
-        Compute the entropy of a set of labels.
+        Compute the entropy of the a set of examples.
         
         Parameters
         ----------
-        labels : Series
-            The target labels for which to compute the entropy.
+        examples_class : Series
+            The target variable of the input data.
         
         Returns
         -------
         entropy : float
             The computed entropy value.
         """
-        value_counts = labels.value_counts(normalize=True)
-        return -np.sum(value_counts * np.log2(value_counts))
+        proportions = examples_class.value_counts(normalize=True)
+        entropy = -np.sum(proportions * np.log2(proportions))
+        
+        return entropy
     
-    def _find_best_split(self, examples, attribute):
+    def _find_best_split(self, examples, attribute, entropy):
         """
         Find the best split value for a continuous attribute.
         
@@ -231,6 +236,8 @@ class IterativeDichotomiser3:
             The input data for the current node.
         attribute : str
             The continuous attribute for which to find the best split value.
+        entropy : float
+            The entropy of the current node.
         
         Returns
         -------
@@ -245,9 +252,6 @@ class IterativeDichotomiser3:
         # Sort the examples by the attribute value
         examples = examples.sort_values(attribute)
         
-        # Compute the initial entropy
-        total_entropy = self._entropy(examples['target_variable_'])
-        
         # Get the attribute values and target variable
         attribute_values = examples[attribute].values
         target_values = examples['target_variable_']
@@ -261,22 +265,20 @@ class IterativeDichotomiser3:
         
         previous_split = None
         
-        # Vectorized computation of entropy for each split
         for split in potential_splits:
             # Dont check the same split value twice
             if split != previous_split:
                 left_mask = attribute_values <= split
                 right_mask = ~left_mask
 
+                proportions_left = left_mask.sum() / len(attribute_values)
+                proportions_right = 1 - proportions_left
+                
                 left_entropy = self._entropy(target_values[left_mask])
                 right_entropy = self._entropy(target_values[right_mask])
-
-                left_weight = np.sum(left_mask) / len(examples)
-                right_weight = np.sum(right_mask) / len(examples)
-
-                weighted_entropy = left_weight * left_entropy + right_weight * right_entropy
-                gain = total_entropy - weighted_entropy
-
+                
+                gain = entropy - (proportions_left * left_entropy + proportions_right * right_entropy)
+                
                 if gain > best_gain:
                     best_gain = gain
                     best_split = split
