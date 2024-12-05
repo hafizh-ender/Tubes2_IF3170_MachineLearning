@@ -8,7 +8,8 @@ class IterativeDichotomiser3:
     
     Parameters
     ----------
-    None
+    max_depth : int, default=None
+        The maximum depth of the decision tree. If None, the tree will expand until all leaves are pure.
     
     Attributes
     ----------
@@ -18,9 +19,10 @@ class IterativeDichotomiser3:
         The unique values of each categorical attribute in the training data.
     """
     
-    def __init__(self):
+    def __init__(self, max_depth=None):
         self.tree_ = None
         self.attribute_unique_values_ = {}
+        self.max_depth_ = max_depth
         
     def fit(self, X, y):
         """
@@ -42,7 +44,7 @@ class IterativeDichotomiser3:
                 self.attribute_unique_values_[attribute] = data[attribute].unique().tolist()
         
         data['target_variable_'] = y
-        self.tree_ = self._construct_tree(data, data.columns[:-1], None)
+        self.tree_ = self._construct_tree(data, data.columns[:-1], None, -1)
         
     def predict(self, X):
         """
@@ -67,7 +69,7 @@ class IterativeDichotomiser3:
         return y_pred.tolist()
 
     
-    def _construct_tree(self, examples, attributes, parent_examples):
+    def _construct_tree(self, examples, attributes, parent_examples, current_depth=0):
         """
         Recursively construct the decision tree based on the ID3 algorithm.
         
@@ -93,8 +95,8 @@ class IterativeDichotomiser3:
         if len(examples['target_variable_'].unique()) == 1:
             return examples['target_variable_'].iloc[0]
         
-        # Base case: no attributes left to split on
-        if len(attributes) == 0:
+        # Base case: no attributes left to split on or maximum depth reached
+        if len(attributes) == 0 or current_depth == self.max_depth_:
             return self._get_majority_class(examples)
         
         # Find the best attribute to split on
@@ -114,13 +116,13 @@ class IterativeDichotomiser3:
             for value in self.attribute_unique_values_[best_attribute]:
                 subset = examples.loc[examples[best_attribute] == value].drop(columns=best_attribute)
                 
-                node['children'][value] = self._construct_tree(subset, attributes.drop(best_attribute), examples)
+                node['children'][value] = self._construct_tree(subset, attributes.drop(best_attribute), examples, current_depth=current_depth+1)
         else:
             left_subset = examples.loc[examples[best_attribute] <= best_split].drop(columns=best_attribute)
             right_subset = examples.loc[examples[best_attribute] > best_split].drop(columns=best_attribute)
             
-            node['children'][f"<= {best_split}"] = self._construct_tree(left_subset, attributes.drop(best_attribute), examples)
-            node['children'][f"> {best_split}"] = self._construct_tree(right_subset, attributes.drop(best_attribute), examples)
+            node['children'][f"<= {best_split}"] = self._construct_tree(left_subset, attributes.drop(best_attribute), examples, current_depth=current_depth+1)
+            node['children'][f"> {best_split}"] = self._construct_tree(right_subset, attributes.drop(best_attribute), examples, current_depth=current_depth+1)
 
         return node           
         
@@ -168,11 +170,11 @@ class IterativeDichotomiser3:
         for attribute in attributes:
             # Check if the attribute is categorical or continuous
             if examples[attribute].dtype == 'object' or examples[attribute].dtype == 'category':              
-                gain = entropy - self._information_gain(examples, attribute)
+                gain = self._information_gain(examples, attribute, entropy)
                 split = None
             else:              
                 # Find the best split value for the continuous attribute
-                gain, split = self._find_best_split(examples, attribute)
+                gain, split = self._find_best_split(examples, attribute, entropy)
                 
             if gain > best_gain:
                 best_attribute = attribute
@@ -181,9 +183,9 @@ class IterativeDichotomiser3:
     
         return best_gain, best_attribute, best_split
     
-    def _information_gain(self, examples, attribute):
+    def _information_gain(self, examples, attribute, entropy):
         """
-        Compute the information gain of an attribute.
+        Compute the information gain of a categotical attribute.
         
         Parameters
         ----------
@@ -191,35 +193,40 @@ class IterativeDichotomiser3:
             The input data for the current node.
         attribute : str
             The attribute for which to compute the information gain.
+        entropy : float
+            The entropy of the current node.
         
         Returns
         -------
         gain : float
             The computed information gain value.
         """
-        value_counts = examples[attribute].value_counts(normalize=True)
-        gain = sum(value_counts[value] * self._entropy(examples[examples[attribute] == value]['target_variable_']) for value in value_counts.index)
+        proportions = examples[attribute].value_counts(normalize=True)
+        grouped_entropies = examples.groupby(attribute)['target_variable_'].apply(self._entropy)
+        gain = entropy - np.sum(proportions * grouped_entropies)        
         
         return gain
     
-    def _entropy(self, labels):
+    def _entropy(self, examples_class):
         """
-        Compute the entropy of a set of labels.
+        Compute the entropy of the a set of examples.
         
         Parameters
         ----------
-        labels : Series
-            The target labels for which to compute the entropy.
+        examples_class : Series
+            The target variable of the input data.
         
         Returns
         -------
         entropy : float
             The computed entropy value.
         """
-        value_counts = labels.value_counts(normalize=True)
-        return -np.sum(value_counts * np.log2(value_counts))
+        proportions = examples_class.value_counts(normalize=True)
+        entropy = -np.sum(proportions * np.log2(proportions))
+        
+        return entropy
     
-    def _find_best_split(self, examples, attribute):
+    def _find_best_split(self, examples, attribute, entropy):
         """
         Find the best split value for a continuous attribute.
         
@@ -229,6 +236,8 @@ class IterativeDichotomiser3:
             The input data for the current node.
         attribute : str
             The continuous attribute for which to find the best split value.
+        entropy : float
+            The entropy of the current node.
         
         Returns
         -------
@@ -243,9 +252,6 @@ class IterativeDichotomiser3:
         # Sort the examples by the attribute value
         examples = examples.sort_values(attribute)
         
-        # Compute the initial entropy
-        total_entropy = self._entropy(examples['target_variable_'])
-        
         # Get the attribute values and target variable
         attribute_values = examples[attribute].values
         target_values = examples['target_variable_']
@@ -257,23 +263,27 @@ class IterativeDichotomiser3:
                 split = (attribute_values[i] + attribute_values[i - 1]) / 2
                 potential_splits.append(split)
         
-        # Vectorized computation of entropy for each split
+        previous_split = None
+        
         for split in potential_splits:
-            left_mask = attribute_values <= split
-            right_mask = ~left_mask
+            # Dont check the same split value twice
+            if split != previous_split:
+                left_mask = attribute_values <= split
+                right_mask = ~left_mask
 
-            left_entropy = self._entropy(target_values[left_mask])
-            right_entropy = self._entropy(target_values[right_mask])
-
-            left_weight = np.sum(left_mask) / len(examples)
-            right_weight = np.sum(right_mask) / len(examples)
-
-            weighted_entropy = left_weight * left_entropy + right_weight * right_entropy
-            gain = total_entropy - weighted_entropy
-
-            if gain > best_gain:
-                best_gain = gain
-                best_split = split
+                proportions_left = left_mask.sum() / len(attribute_values)
+                proportions_right = 1 - proportions_left
+                
+                left_entropy = self._entropy(target_values[left_mask])
+                right_entropy = self._entropy(target_values[right_mask])
+                
+                gain = entropy - (proportions_left * left_entropy + proportions_right * right_entropy)
+                
+                if gain > best_gain:
+                    best_gain = gain
+                    best_split = split
+                
+                previous_split = split
             
         return best_gain, best_split
     
