@@ -126,7 +126,9 @@ class GaussianNaiveBayes:
         for i, value in enumerate(x):
             mean = self.class_means_[label][i]
             variance = self.class_variances_[label][i]
-            class_prob *= self._gaussian_pdf(value, mean, variance)
+            
+            if variance != 0:
+                class_prob *= self._gaussian_pdf(value, mean, variance)
             
         return class_prob
     
