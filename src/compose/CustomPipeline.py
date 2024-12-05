@@ -1,5 +1,6 @@
 from src.compose import PipelineProperty
 from src.compose import CustomTransformer, PipelineComponent
+import pandas as pd
 
 
 class CustomPipeline:
@@ -8,11 +9,14 @@ class CustomPipeline:
     ('name', PipelineComponent)
     """
 
-    def __init__(self, args, pl_property: PipelineProperty, verbose=False):
+    def __init__(self, args, pl_property: PipelineProperty, verbose=False, **kwargs):
         self._args = args
         self._pl_property = pl_property
         self._skipped_steps = []
         self._verbose = verbose
+        self._config = kwargs
+
+        self._config['counter'] = pd.Series()
 
     @property
     def pl_property(self):
@@ -22,9 +26,13 @@ class CustomPipeline:
         self._pl_property.X_transformed = X.copy()
         self._pl_property.y_transformed = y.copy() if y is not None else None
 
-        for idx, arg in enumerate(self._args):
+        for idx, arg in enumerate(self._args.copy()):
+            if 'only_once' in self._config and arg[0] in self._config['only_once'] and arg[0] in self._config[
+                'counter'] and self._config['counter'][arg[0]] > 0:
+                continue
+
             if self._verbose:
-                print(f"component: {arg[0]}")
+                print(f"fit: {arg[0]}")
 
             component = arg[1]
 
@@ -39,6 +47,11 @@ class CustomPipeline:
 
             component.post_handler(self._pl_property)
 
+            if arg[0] in self._config['counter']:
+                self._config['counter'][arg[0]] += 1
+            else:
+                self._config['counter'][arg[0]] = 1
+
     def transform(self, X, y=None):
         if self._pl_property.X_transformed is None and self._pl_property.y_transformed is None:
             raise Exception()
@@ -47,8 +60,12 @@ class CustomPipeline:
         self.pl_property.y_transformed = y.copy() if y is not None else None
 
         for arg in self._args:
+            if 'only_once' in self._config and arg[0] in self._config['only_once'] and arg[0] in self._config[
+                'counter'] and self._config['counter'][arg[0]] > 0:
+                continue
+
             if self._verbose:
-                print(f"component: {arg[0]}")
+                print(f"transform: {arg[0]}")
 
             component = arg[1]
             component.transform(self._pl_property)
