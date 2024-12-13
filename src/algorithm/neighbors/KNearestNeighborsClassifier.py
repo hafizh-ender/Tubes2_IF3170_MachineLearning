@@ -68,13 +68,16 @@ class KNearestNeighborsClassifier:
 
         self._X_test, self._n_instances_test = X_test, X_test.shape[0]
 
-        Y_predicted = np.zeros(self._n_instances_test)
+        Y_predicted = []
         self._k_neighbors_distances = np.array([np.zeros(self._k_neighbors) for _ in range(self._n_instances_test)])
 
         for i in range(self._n_instances_test):
             k_neighbors, distances = self._find_k_neighbors(self._X_test[i])
 
-            self._k_neighbors_distances[i], Y_predicted[i] = distances, mode(k_neighbors).mode
+            self._k_neighbors_distances[i] = distances
+
+            value, count = np.unique(k_neighbors, return_counts=True)
+            Y_predicted.append(value[np.argmax(count)])
 
         return Y_predicted
 

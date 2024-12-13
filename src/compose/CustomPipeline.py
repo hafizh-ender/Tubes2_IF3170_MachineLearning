@@ -32,7 +32,7 @@ class CustomPipeline:
                 continue
 
             if self._verbose:
-                print(f"fit: {arg[0]}")
+                print(f"fit and transform: {arg[0]}")
 
             component = arg[1]
 
@@ -79,3 +79,12 @@ class CustomPipeline:
         X_transformed = self.transform(X_transformed)
 
         return X_transformed
+
+    def get_component(self, key):
+        for arg in self._args:
+            if arg[0] == key:
+                return arg[1]
+
+        return ValueError(f"component with key {key} not found")
+
+

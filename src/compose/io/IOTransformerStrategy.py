@@ -12,6 +12,10 @@ class IOTransformerStrategy(ABC):
 
         return self
 
+    @property
+    def strategy(self):
+        return self._strategy
+
     @abstractmethod
     def fit(self, pl_property):
         pass

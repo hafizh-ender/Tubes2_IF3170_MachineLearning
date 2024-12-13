@@ -15,6 +15,10 @@ class PipelineComponent():
     def __call__(self, *args, **kwargs):
         return self._post_handler(*args, **kwargs)
 
+    @property
+    def io_strategy(self) -> CommonIOTransformerStrategy:
+        return self._io_strategy
+
     def set_io_strategy(self, io_strategy: IOTransformerStrategy):
         self._io_strategy = io_strategy
 
