@@ -6,9 +6,10 @@ from src.preprocessing.exception import NotFittedException
 
 
 class RandomForestFeatureSelectionHandlerStrategy(TransformerStrategy):
-    def __init__(self):
+    def __init__(self, percentage=0.8):
         self._rf = RandomForestClassifier(random_state=42)
         self._selected_features = None
+        self._percentage = percentage
 
     def fit(self, X, y):
         X_transformed = X.copy()
@@ -17,7 +18,7 @@ class RandomForestFeatureSelectionHandlerStrategy(TransformerStrategy):
         feature_importance_df = (
             pd.DataFrame({'Feature': X_transformed.columns, 'Importance': self._rf.feature_importances_})
             .sort_values(by='Importance', ascending=False))
-        N = int(len(self._rf.feature_importances_) * 0.8)  # top 80%
+        N = int(len(self._rf.feature_importances_) * self._percentage)  # top 80%
         self._selected_features = feature_importance_df['Feature'][:N].values
 
     def transform(self, X):
