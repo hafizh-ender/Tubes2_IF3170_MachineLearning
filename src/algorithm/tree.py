@@ -437,7 +437,7 @@ class IterativeDichotomiser3:
         # Check if the attribute is categorical or numerical
         if node['split_'] is None:
             if value not in node['children_']:
-                return node['majority_class_']
+                return self.classes_[node['majority_class_']]
             
             return self._classify(x, node['children_'][value])
         else:
