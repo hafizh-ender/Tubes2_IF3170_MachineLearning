@@ -3,5 +3,6 @@ from . import DistanceStrategy
 
 
 class EuclideanDistanceStrategy(DistanceStrategy):
-    def calculate(self, point1: np.ndarray, point2: np.ndarray) -> float:
-        return np.sqrt(np.sum((point1 - point2) ** 2))
+    def calculate(self, X_train, X_test):
+        return np.sqrt(-2 * np.dot(X_test, X_train.T) + np.sum(X_train ** 2, axis=1) + (np.sum(X_test ** 2, axis=1))[:, np.newaxis])
+
