@@ -3,5 +3,6 @@ from . import DistanceStrategy
 
 
 class ManhattanDistanceStrategy(DistanceStrategy):
-    def calculate(self, point1: np.ndarray, point2: np.ndarray) -> float:
-        return np.sum(np.abs(point1 - point2))
+    def calculate(self, X_train, X_test) -> float:
+        return np.abs(X_test[:,None] - X_train).sum(-1)
+

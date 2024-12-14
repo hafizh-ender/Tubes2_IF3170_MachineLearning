@@ -25,8 +25,9 @@ class KNearestNeighborsClassifier:
 
     _k_neighbors_distances: ndarray[Any, dtype[Any]]
 
-    def __init__(self, n_neighbors: int = 2, distance_strategy: DistanceStrategy = EuclideanDistanceStrategy()):
+    def __init__(self, n_neighbors: int = 2, distance_strategy: DistanceStrategy = EuclideanDistanceStrategy(), batch_size=5000):
         self._k_neighbors, self._distance_strategy = n_neighbors, distance_strategy
+        self._batch_size = batch_size
 
     @property
     def n_neighbors(self) -> int:
@@ -69,30 +70,23 @@ class KNearestNeighborsClassifier:
         self._X_test, self._n_instances_test = X_test, X_test.shape[0]
 
         Y_predicted = []
-        self._k_neighbors_distances = np.array([np.zeros(self._k_neighbors) for _ in range(self._n_instances_test)])
+        batch_size = min(self._batch_size, self._n_instances_test)
+        num_of_batches = round(self._n_instances_test / batch_size)
 
-        for i in range(self._n_instances_test):
-            k_neighbors, distances = self._find_k_neighbors(self._X_test[i])
+        for i in range(num_of_batches):
+            print(f"batch: {i+1} of {num_of_batches}")
 
-            self._k_neighbors_distances[i] = distances
+            start_idx = i * batch_size
+            end_idx = min(start_idx + batch_size, self._n_instances_test)
 
-            value, count = np.unique(k_neighbors, return_counts=True)
-            Y_predicted.append(value[np.argmax(count)])
+            X_test_batch = X_test[start_idx:end_idx]
+
+            for distances in self._distance_strategy.calculate(self._X_train, X_test_batch):
+                indices = distances.argsort()[:self.n_neighbors]
+                value, count = np.unique(self._Y_train[indices], return_counts=True)
+                Y_predicted.append(value[np.argmax(count)])
 
         return Y_predicted
-
-    # return the k nearest neighbors and the distances
-    def _find_k_neighbors(self, x: List[List[Union[int, float]]]) -> Tuple[List[Union[int, float]], List[Union[int, float]]]:
-        if self._X_test is None:
-            raise TestingDataIsNotDefinedException()
-
-        distances = np.zeros(self._n_instances_train)
-        for i in range(self._n_instances_train):
-            distances[i] = self._distance_strategy.calculate(x, self._X_train[i])
-
-        indices = distances.argsort()[:self.n_neighbors]
-
-        return self._Y_train[indices], distances[indices]
 
     def save(self, filepath: str) -> None:
         if Utils.get_file_extension(filepath) != ".pkl":

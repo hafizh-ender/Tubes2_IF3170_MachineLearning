@@ -56,6 +56,4 @@ class PipelineComponent():
         return self._io_strategy.transform(pl_property)
 
     def fit_transform(self, pl_property: PipelineProperty):
-        self._io_strategy.fit(pl_property)
-
-        return self._io_strategy.transform(pl_property)
+        return self._io_strategy.fit_transform(pl_property)
