@@ -428,7 +428,7 @@ class IterativeDichotomiser3:
         """
         # Base case: leaf node
         if not isinstance(node, dict):
-            return self.classes_[node]
+            return self.classes_[int(node)]
         
         attribute = node['attribute_']
         attribute_index = np.where(self.feature_names_in_ == attribute)[0][0]
