@@ -14,13 +14,13 @@ The UNSW-NB15 dataset is a collection of network traffic data that includes vari
 1. Clone the repository
    Clone this repository to your local machine:
    ```bash
-   git clone https://github.com/hafizh-ender/Tubes1_IF3170_LocalSearch.git
+   git clone https://github.com/hafizh-ender/Tubes2_IF3170_MachineLearning.git
    ```
 
 2. Navigate to the project directory
    Change into the repository's folder:
    ```bash
-   cd Tubes1_IF3170_LocalSearch
+   cd Tubes2_IF3170_MachineLearning
    ```
 
 3. Create a virtual environment
